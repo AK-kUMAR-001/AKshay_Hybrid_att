@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pay - Amount</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b1120;--bg2:#101a33;--accent:#27f0d2;--muted:hsla(0,0%,100%,0.75);--card:rgba(255,255,255,0.08)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Space Grotesk',system-ui;color:#eaf6f0;background:radial-gradient(1200px 600px at 10% 10%,#1b2a4a,transparent),linear-gradient(135deg,var(--bg),var(--bg2));min-height:100vh}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem}
+    .brand{font-weight:700}
+    .nav a{color:var(--muted);text-decoration:none;margin-left:1rem}
+    .center{display:flex;justify-content:center;align-items:center;min-height:65vh;padding:1rem}
+    .panel{width:560px;background:var(--card);padding:2rem;border-radius:18px;box-shadow:0 20px 50px rgba(2,8,18,0.6)}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+    .badge{padding:0.3rem 0.6rem;border-radius:999px;background:rgba(39,240,210,0.15);color:#7fffe7;font-size:0.85rem}
+    .amt-input{width:100%;margin:0.8rem 0 1rem 0;padding:1rem;border-radius:14px;border:1px solid rgba(255,255,255,0.18);background:transparent;color:#fff;font-size:1.6rem;text-align:right}
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:0.6rem}
+    .key{padding:0.9rem;border-radius:14px;border:1px solid rgba(255,255,255,0.18);background:transparent;color:#fff;font-weight:700;font-size:1.1rem}
+    .btn{margin-top:1rem;display:inline-block;padding:0.8rem 1.2rem;border-radius:12px;background:linear-gradient(90deg,var(--accent),#6bffdf);color:#03201a;text-decoration:none;border:0;font-weight:700;width:100%}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Pay</div>
+    <div class="nav">
+      <a href="{{ url_for('payment_reset') }}">Back</a>
+      <a href="{{ url_for('index') }}">Out</a>
+    </div>
+  </div>
+
+  <div class="center">
+    <div class="panel">
+      <div class="row">
+        <div style="font-weight:700;">Enter Amount</div>
+        <div class="badge">{{ name }} ({{ student_id }})</div>
+      </div>
+      <form method="POST" action="{{ url_for('payment_password') }}" id="amountForm">
+        <input type="text" id="amountDisplay" name="amount" class="amt-input" placeholder="0" inputmode="numeric" maxlength="5" autocomplete="off">
+        <div class="keypad" id="pad">
+          {% for i in range(1,10) %}
+            <button type="button" class="key" data-val="{{ i }}">{{ i }}</button>
+          {% endfor %}
+          <button type="button" class="key" data-action="clear">Clear</button>
+          <button type="button" class="key" data-val="0">0</button>
+          <button type="button" class="key" data-action="back">?</button>
+        </div>
+        <button type="submit" class="btn">Continue</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const buttons = document.querySelectorAll('.key');
+    const input = document.getElementById('amountDisplay');
+    let amount = '';
+    function setAmount(v){
+      amount = v.replace(/\D/g,'').slice(0,5);
+      input.value = amount.replace(/^0+(?=\d)/,'');
+    }
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        if (action === 'clear') { setAmount(''); return; }
+        if (action === 'back') { setAmount(amount.slice(0,-1)); return; }
+        setAmount(amount + btn.dataset.val);
+      });
+    });
+    input.addEventListener('input', () => setAmount(input.value));
+    document.getElementById('amountForm').addEventListener('submit', (e) => {
+      if (!input.value) { e.preventDefault(); alert('Please enter an amount'); }
+    });
+  </script>
+</body>
+</html>

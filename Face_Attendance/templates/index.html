@@ -3,158 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Recognition Attendance</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Campus Smart Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root{ 
-            --bg-1:#0f1724; 
-            --bg-2:#1b2a44; 
-            --accent:#3be3b0; 
-            --muted:hsla(0,0%,100%,0.75); 
-            --card: rgba(255,255,255,0.04); 
-        } 
-        *{box-sizing:border-box} 
-        body{ 
-            margin:0; 
-            font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, Arial; 
-            background: linear-gradient(135deg,var(--bg-1),var(--bg-2)); 
-            color:#eaf6f0; 
-            -webkit-font-smoothing:antialiased; 
-            min-height: 100vh;
-        } 
-        .container{max-width:1100px;margin:0 auto;padding:1rem 1.25rem} 
-        .site-header{padding:1rem 0;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);backdrop-filter:blur(4px)} 
-        .header-inner{display:flex;align-items:center;justify-content:space-between} 
-        .brand .college{margin:0;font-size:1.15rem;font-weight:700;letter-spacing:0.2px; color: #fff;} 
-        .brand .tag{margin:0;color:var(--muted);font-size:0.9rem} 
-        .nav a{color:var(--muted);text-decoration:none;margin-left:1rem;padding:0.4rem 0.6rem;border-radius:6px;transition:all .18s} 
-        .nav a:hover{color:#fff;background:rgba(255,255,255,0.03)} 
-        
-        .main-grid{padding:2rem 0} 
-        .hero{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start} 
-        .hero-card{background:var(--card);padding:1.6rem;border-radius:12px;box-shadow:0 6px 20px rgba(3,10,18,0.6)} 
-        .hero-card h2{margin:0 0 0.35rem 0;font-size:1.6rem} 
-        .hero-card p{margin:0 0 1rem 0;color:var(--muted)} 
-        .controls{display:flex;gap:0.75rem; flex-wrap: wrap;} 
-        .btn{display:inline-block;padding:0.6rem 0.9rem;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.08);color:var(--muted);text-decoration:none;font-weight:600; cursor: pointer;} 
-        .btn.primary{background:linear-gradient(90deg,var(--accent),#5df2c6);color:#042018;border:0} 
-        .btn:hover{transform:translateY(-3px)} 
-        
-        .video-card{display:flex;flex-direction:column;align-items:center;gap:0.8rem} 
-        .video-wrap{width:100%;background:#07101a;padding:0.6rem;border-radius:12px;border:1px solid rgba(255,255,255,0.03)} 
-        .video-wrap img{width:100%;height:auto;border-radius:8px;display:block} 
-        .status{margin:0;color:var(--muted);font-size:0.95rem} 
-        
-        .features{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.25rem} 
-        .feature{background:var(--card);padding:1rem;border-radius:10px;text-align:center} 
-        .feature h3{margin:0 0 0.5rem 0; font-size: 1.1rem;} 
-        .feature p{margin:0;color:var(--muted);font-size:0.9rem} 
-        
-        .site-footer{padding:1rem 0;text-align:center;color:var(--muted);border-top:1px solid rgba(255,255,255,0.02);margin-top:2rem} 
-        
-        @media (max-width:900px){ 
-            .hero{grid-template-columns:1fr} 
-            .features{grid-template-columns:1fr;} 
-            .header-inner{flex-direction:column;align-items:flex-start;gap:0.6rem} 
-        } 
-        
-        @media (max-width:480px){ 
-            .brand .college{font-size:1rem} 
-            .nav a{margin-left:0.4rem;padding:0.35rem 0.5rem} 
+        :root{
+            --bg-1:#0a111f;
+            --bg-2:#111d37;
+            --ink:#eaf6f0;
+            --muted:hsla(0,0%,100%,0.7);
+            --accent:#23e6c8;
+            --gold:#ffcc00;
+            --card:rgba(255,255,255,0.07);
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+            color:var(--ink);
+            background:
+                linear-gradient(135deg, rgba(10,17,31,0.92), rgba(17,29,55,0.92)),
+                url("https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1600&q=60") center/cover no-repeat fixed;
+            min-height:100vh;
+        }
+        .overlay{
+            background: radial-gradient(800px 500px at 12% 10%, rgba(35,230,200,0.08), transparent),
+                        radial-gradient(700px 500px at 85% 20%, rgba(255,204,0,0.05), transparent);
+            min-height:100vh;
+        }
+        .container{max-width:1100px;margin:0 auto;padding:1rem 1.25rem}
+        .site-header{padding:1rem 0;background:linear-gradient(180deg, rgba(255,255,255,0.08), transparent);backdrop-filter:blur(8px)}
+        .header-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+        .brand h1{margin:0;font-size:1.05rem;font-weight:700;letter-spacing:0.3px}
+        .brand p{margin:0;color:var(--muted);font-size:0.9rem}
+        .nav a{color:var(--muted);text-decoration:none;margin-left:1rem;padding:0.4rem 0.6rem;border-radius:8px;transition:all .18s}
+        .nav a:hover{color:#fff;background:rgba(255,255,255,0.12)}
+
+        .hero{padding:2.2rem 0 1.5rem 0}
+        .hero-card{background:var(--card);padding:2rem;border-radius:16px;box-shadow:0 12px 30px rgba(2,8,18,0.6)}
+        .kicker{display:inline-flex;align-items:center;gap:0.5rem;padding:0.35rem 0.7rem;border-radius:999px;background:rgba(35,230,200,0.15);color:#7fffe7;font-size:0.85rem}
+        .title{font-family:'DM Serif Display', serif;font-size:2.6rem;margin:0.7rem 0 0.8rem 0;line-height:1.1}
+        .lead{color:var(--muted);font-size:1.05rem;line-height:1.7;margin:0 0 1.2rem 0}
+        .cta-row{display:flex;gap:0.8rem;flex-wrap:wrap}
+        .btn{display:inline-block;padding:0.8rem 1.1rem;border-radius:10px;border:1px solid rgba(255,255,255,0.18);color:var(--muted);text-decoration:none;font-weight:700}
+        .btn.primary{background:linear-gradient(90deg,var(--accent),#68fbe1);color:#03201a;border:0}
+        .btn.warn{border:1px solid var(--gold);color:var(--gold);background:rgba(255,200,0,0.12)}
+
+        .section{margin:1.4rem 0}
+        .feature-block{background:var(--card);padding:1.4rem;border-radius:14px;box-shadow:0 10px 24px rgba(2,8,18,0.5)}
+        .feature-block h3{margin:0 0 0.4rem 0}
+        .feature-block p{margin:0;color:var(--muted);line-height:1.6}
+        .feature-block + .feature-block{margin-top:0.9rem}
+
+        .cta-slab{display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--card);padding:1.2rem;border-radius:14px}
+
+        .site-footer{padding:1rem 0;text-align:center;color:var(--muted);border-top:1px solid rgba(255,255,255,0.2);margin-top:2rem}
+
+        @media (max-width:900px){
+            .header-inner{flex-direction:column;align-items:flex-start}
+            .cta-slab{flex-direction:column;align-items:flex-start}
         }
     </style>
 </head>
 <body>
-
+<div class="overlay">
     <header class="site-header">
         <div class="container header-inner">
             <div class="brand">
-                <h1 class="college">Sankara College of Science and Commerce</h1>
-                <p class="tag">Face Recognition Attendance System</p>
+                <h1>SRI KRISHNA ADITYA COLLEGE OF ARTS AND SCIENCE</h1>
+                <p>Smart Attendance, ID & QR Payments</p>
             </div>
             <nav class="nav">
                 <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('payment') }}">Payment</a>
+                <a href="{{ url_for('attendance') }}">Attendance</a>
                 <a href="{{ url_for('register') }}">Register</a>
                 <a href="{{ url_for('train') }}">Train</a>
-                <a href="{{ url_for('attendance') }}">Attendance</a>
+                <a href="javascript:history.back()">Back</a>
+                <a href="{{ url_for('index') }}">Out</a>
             </nav>
         </div>
     </header>
 
-    <main class="container main-grid">
-        <div class="hero">
-            <div class="left-col">
-                <div class="hero-card">
-                    <h2>Welcome</h2>
-                    <p>Automated, fast and secure attendance using face recognition technology. Manage students and track attendance efficiently.</p>
-                    <div class="controls">
-                        <a href="{{ url_for('register') }}" class="btn primary">Register New Face</a>
-                        <a href="{{ url_for('train') }}" class="btn">Train Model</a>
-                        <a href="{{ url_for('attendance') }}" class="btn">View Reports</a>
-                    </div>
-                </div>
-
-                <div class="features">
-                    <div class="feature">
-                        <h3>Fast</h3>
-                        <p>Real-time detection</p>
-                    </div>
-                    <div class="feature">
-                        <h3>Secure</h3>
-                        <p>Local processing</p>
-                    </div>
-                    <div class="feature">
-                        <h3>Easy</h3>
-                        <p>One-click export</p>
-                    </div>
+    <main class="container">
+        <section class="hero">
+            <div class="hero-card">
+                <span class="kicker">Campus Smart Hub</span>
+                <h2 class="title">CARD BASED PAYMENT AND ATTENDANCE</h2>
+                <p class="lead">A streamlined campus platform for QR payments, ID verification, and attendance?built to be fast, secure, and dependable during live sessions.</p>
+                <div class="cta-row">
+                    <a href="{{ url_for('payment') }}" class="btn primary">QR Payment (Primary)</a>
+                    <a href="{{ url_for('attendance') }}" class="btn">Attendance & ID</a>
+                    <a href="{{ url_for('register') }}" class="btn warn">Register Student</a>
                 </div>
             </div>
+        </section>
 
-            <div class="video-card">
-                <div class="video-wrap">
-                    <!-- MJPEG Stream from Python Server -->
-                    <img src="{{ url_for('video') }}" style="width: 100%; height: auto; border-radius: 8px; display: block;">
-                </div>
-                
-                <div class="status-controls" style="display: flex; flex-direction: column; gap: 1rem; align-items: center; justify-content: center; width: 100%;">
-                    {% if is_active %}
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <p class="status" style="color: #3be3b0; margin: 0;">● System Active: {{ session_name }}</p>
-                            <a href="{{ url_for('stop_attendance') }}" class="btn" style="background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d;">Stop Attendance</a>
-                        </div>
-                    {% else %}
-                        <p class="status" style="color: var(--muted); margin: 0;">● System Stopped</p>
-                        <form action="{{ url_for('start_attendance') }}" method="POST" style="display: flex; gap: 0.5rem; width: 100%; max-width: 400px;">
-                            <input type="text" name="session_name" placeholder="Enter Session Name (e.g., Period 1)" value="Period 1" style="flex: 1; padding: 0.8rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff;">
-                            <button type="submit" class="btn primary">Start Attendance</button>
-                        </form>
-                    {% endif %}
-                </div>
-                
-                {% with messages = get_flashed_messages() %}
-                  {% if messages %}
-                    <div class="flash" style="width: 100%; text-align: center; margin-top: 0.5rem; color: var(--accent);">
-                    {% for message in messages %}
-                      <small>{{ message }}</small>
-                    {% endfor %}
-                    </div>
-                  {% endif %}
-                {% endwith %}
+        <section class="section">
+            <div class="feature-block">
+                <h3>1. QR?First Payment Experience</h3>
+                <p>Payments lead the workflow. Scan the QR, select amount, confirm with a personal password, and complete with a secure success flow.</p>
             </div>
-        </div>
+            <div class="feature-block">
+                <h3>2. Dual Identification (Face + ID)</h3>
+                <p>Face recognition and ID card OCR work independently or together. This keeps attendance flexible for different student preferences.</p>
+            </div>
+            <div class="feature-block">
+                <h3>3. Camera On?Demand</h3>
+                <p>No camera runs on the home page. Start and stop the camera only inside Payment or Attendance pages to conserve privacy and control.</p>
+            </div>
+            <div class="feature-block">
+                <h3>4. Audit?Ready Logs</h3>
+                <p>Attendance logs and reports remain available anytime, with local storage for data safety.</p>
+            </div>
+        </section>
+
+        <section class="cta-slab">
+            <div>
+                <h3 style="margin:0 0 0.4rem 0;">Ready to process a payment?</h3>
+                <p class="lead" style="margin:0;">Open the QR payment flow and scan a student QR.</p>
+            </div>
+            <a href="{{ url_for('payment') }}" class="btn primary">Open Payment</a>
+        </section>
     </main>
 
     <footer class="site-footer">
         <div class="container">
-            &copy; 2026 Sankara College. All rights reserved.
+            &copy; 2026 SRI KRISHNA ADITYA COLLEGE OF ARTS AND SCIENCE. All rights reserved.
         </div>
     </footer>
-
-    <!-- Scripts -->
-    <!-- <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script> -->
-    <script>
-        // Simple script to handle UI interactions if needed
-        console.log("Attendance System Ready");
-    </script>
+</div>
 </body>
 </html>

@@ -1,0 +1,55 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.94.33.26:5000
+Press CTRL+C to quit
+127.0.0.1 - - [28/Mar/2026 06:23:33] "GET /attendance?reset=0 HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:33] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [28/Mar/2026 06:23:33] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:34] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:35] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:38] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:38] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:38] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:38] "GET /video HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:40] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:40] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:40] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:40] "GET /attendance_success HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:40] "GET /attendance_success HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:45] "GET /attendance HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:45] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:45] "GET /video HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:46] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:46] "GET /attendance_success HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:48] "GET /attendance HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:48] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:48] "GET /video HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:48] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:49] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:50] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:51] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:52] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:52] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:53] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:54] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:54] "POST /start_attendance HTTP/1.1" 302 -
+127.0.0.1 - - [28/Mar/2026 06:23:55] "GET /attendance?reset=0 HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:23:55] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:24:08] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:24:13] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:24:18] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:24:22] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:24:26] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:24:41] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:24:53] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:25:04] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:25:09] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:25:21] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:25:35] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:25:35] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:25:49] "GET /stop_camera HTTP/1.1" 302 -
+127.0.0.1 - - [28/Mar/2026 06:25:49] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:25:53] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:26:16] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 06:26:25] "GET /stop_camera HTTP/1.1" 302 -

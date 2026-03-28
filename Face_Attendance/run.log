@@ -1,0 +1,7 @@
+Database initialized successfully.
+Encodings loaded successfully.
+PyTorch Encodings loaded successfully. (38 faces)
+Loaded 5 ID card templates.
+Loaded 2 card OCR mappings.
+ * Serving Flask app 'app'
+ * Debug mode: off

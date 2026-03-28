@@ -1,0 +1,1 @@
+d:\sanjay_projects\sanjay_att\.venv\Scripts\python.exe d:\sanjay_projects\sanjay_att\Face_Attendance\app.py

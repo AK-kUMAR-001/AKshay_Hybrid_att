@@ -2,7 +2,7 @@
 
 A smart attendance system using Face Recognition, Flask, and Twilio WhatsApp integration.
 
-## 📋 Features
+## ?? Features
 - **Real-time Face Recognition**: Detects and marks attendance instantly.
 - **Excel Reporting**: Automatically generates and saves attendance logs in Excel format.
 - **WhatsApp Integration**: Sends attendance summaries to staff via Twilio.
@@ -10,7 +10,7 @@ A smart attendance system using Face Recognition, Flask, and Twilio WhatsApp int
 - **Session Management**: Supports multiple sessions (e.g., Period 1, Period 2).
 - **Secure**: Data is processed locally.
 
-## 🛠️ Requirements
+## ??? Requirements
 
 ### Hardware
 - A Windows/Linux/Mac computer.
@@ -22,7 +22,7 @@ A smart attendance system using Face Recognition, Flask, and Twilio WhatsApp int
   - Download "Visual Studio Community" installer.
   - Select **"Desktop development with C++"**.
 
-## 🚀 Installation Steps
+## ?? Installation Steps
 
 1. **Clone/Download** this project.
 2. Open a terminal (Command Prompt or PowerShell) in the project folder.
@@ -33,7 +33,7 @@ A smart attendance system using Face Recognition, Flask, and Twilio WhatsApp int
    ```
    *Note: If `dlib` fails to install, ensure you have CMake and C++ Build Tools installed.*
 
-## ▶️ How to Run
+## ?? How to Run
 
 1. **Start the Application**:
    ```bash
@@ -49,7 +49,7 @@ A smart attendance system using Face Recognition, Flask, and Twilio WhatsApp int
    - **Start Session**: On the Home page, enter a Session Name (e.g., "Period 1") and click **Start Attendance**.
    - **Stop Session**: Click **Stop Attendance** to save the report and send notifications.
 
-## ☁️ Hosting & Cloud Deployment (Important!)
+## ?? Hosting & Cloud Deployment (Important!)
 
 **Can this run on the cloud (e.g., AWS, Heroku, Vercel)?**
 **No, not directly.**

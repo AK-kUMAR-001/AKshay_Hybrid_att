@@ -8,7 +8,7 @@ import os
 # Resolve paths relative to this script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENCODINGS_FILE = os.path.join(BASE_DIR, "encodings.pkl")
-THRESHOLD = 0.45
+THRESHOLD = 0.55
 
 class FaceRecognizer:
     def __init__(self):

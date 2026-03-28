@@ -1,0 +1,17 @@
+Database initialized successfully.
+Encodings loaded successfully.
+PyTorch Encodings loaded successfully. (38 faces)
+Loaded 5 ID card templates.
+Loaded 2 card OCR mappings.
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.94.33.26:5000
+Press CTRL+C to quit
+127.0.0.1 - - [28/Mar/2026 01:50:19] "POST /start_attendance HTTP/1.1" 302 -
+127.0.0.1 - - [28/Mar/2026 01:50:19] "GET /attendance?reset=0 HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 01:50:23] "GET /video HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 01:50:24] "POST /start_attendance HTTP/1.1" 302 -
+127.0.0.1 - - [28/Mar/2026 01:50:24] "GET /attendance?reset=0 HTTP/1.1" 200 -
