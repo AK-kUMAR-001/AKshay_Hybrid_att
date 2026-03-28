@@ -8,6 +8,13 @@ from card_recognizer import CardRecognizer
 from database import mark_attendance, init_db, get_attendance_records, generate_session_report
 import os
 import time
+import threading
+
+# Reduce OpenCV thread contention on Windows webcam backends
+try:
+    cv2.setNumThreads(0)
+except Exception:
+    pass
 from datetime import datetime
 from face_encoder import generate_encodings
 from twilio.rest import Client
@@ -59,9 +66,15 @@ import json
 
 # Global Camera Management
 video_capture = None
+payment_video_capture = None
+payment_camera_backend = None
+payment_camera_index = None
 is_registering = False
 is_attendance_active = False
 camera_paused = False
+camera_lock = threading.Lock()
+payment_camera_lock = threading.Lock()
+camera_in_use = None
 recognition_mode = "both"  # "face", "card", "both"
 session_start_time = None
 current_session_name = "Session"
@@ -69,6 +82,7 @@ marked_students = set()
 ALLOWED_IDS = {s.strip() for s in os.getenv("ALLOWED_IDS", "100,103").split(",") if s.strip()}
 SESSION_FILE = "session_state.json"
 last_camera_probe = 0
+last_payment_camera_probe = 0
 last_card_check = 0
 card_message = {"until": 0, "text": "", "ok": False}
 card_hold_until = 0
@@ -83,6 +97,7 @@ payment_camera_active = False
 payment_last_qr = {"id": None, "name": None, "raw": None, "time": 0}
 payment_message = ""
 payment_qr_detector = cv2.QRCodeDetector()
+attendance_qr_detector = cv2.QRCodeDetector()
 BARCODE_MAP_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "barcode_id_map.json")
 barcode_map = {}
 barcode_message = {"until": 0, "text": "", "ok": False}
@@ -90,15 +105,20 @@ barcode_hold_until = 0
 BARCODE_CONFIRM = {"val": None, "count": 0, "last_time": 0}
 BARCODE_CONFIRM_HITS = 2
 BARCODE_CONFIRM_WINDOW = 2.0
+qr_message = {"until": 0, "text": "", "ok": False}
+qr_hold_until = 0
+QR_CONFIRM = {"val": None, "count": 0, "last_time": 0}
+DISABLE_BARCODE = os.getenv("DISABLE_BARCODE", "1").strip() == "1"
 
 try:
     from pyzbar import pyzbar
     HAS_PYZBAR = True
 except Exception:
     HAS_PYZBAR = False
+HAS_OPENCV_BARCODE = hasattr(cv2, "barcode")
 
 def decode_barcodes(frame_bgr):
-    if not HAS_PYZBAR:
+    if not HAS_PYZBAR and not HAS_OPENCV_BARCODE:
         return []
     symbols = None
     try:
@@ -108,18 +128,22 @@ def decode_barcodes(frame_bgr):
 
     # Try OpenCV barcode detector first (from opencv-contrib)
     try:
-        if hasattr(cv2, "barcode"):
+        if HAS_OPENCV_BARCODE:
             det = cv2.barcode_BarcodeDetector()
-            ok, decoded, _, _ = det.detectAndDecode(frame_bgr)
-            if ok and decoded:
-                return [type("B", (), {"data": d.encode("utf-8"), "rect": (0, 0, 0, 0)}) for d in decoded]
+            for img in (frame_bgr, cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)):
+                ok, decoded, _, _ = det.detectAndDecode(img)
+                if ok and decoded:
+                    if isinstance(decoded, str):
+                        decoded = [decoded]
+                    return [type("B", (), {"data": d.encode("utf-8"), "rect": (0, 0, 0, 0)}) for d in decoded]
     except Exception:
         pass
 
     # Try raw frame (pyzbar)
-    out = pyzbar.decode(frame_bgr, symbols=symbols) if symbols else pyzbar.decode(frame_bgr)
-    if out:
-        return out
+    if HAS_PYZBAR:
+        out = pyzbar.decode(frame_bgr, symbols=symbols) if symbols else pyzbar.decode(frame_bgr)
+        if out:
+            return out
 
     # Preprocess for better detection
     gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
@@ -130,7 +154,7 @@ def decode_barcodes(frame_bgr):
 
     variants = []
     for img in (gray, roi):
-        img = cv2.resize(img, None, fx=1.8, fy=1.8, interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(img, None, fx=2.4, fy=2.4, interpolation=cv2.INTER_CUBIC)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         img = clahe.apply(img)
         variants.append(img)
@@ -139,9 +163,19 @@ def decode_barcodes(frame_bgr):
         variants.append(cv2.bitwise_not(variants[-1]))
 
     for v in variants:
-        out = pyzbar.decode(v, symbols=symbols) if symbols else pyzbar.decode(v)
-        if out:
-            return out
+        if HAS_OPENCV_BARCODE:
+            try:
+                ok, decoded, _, _ = det.detectAndDecode(v)
+                if ok and decoded:
+                    if isinstance(decoded, str):
+                        decoded = [decoded]
+                    return [type("B", (), {"data": d.encode("utf-8"), "rect": (0, 0, 0, 0)}) for d in decoded]
+            except Exception:
+                pass
+        if HAS_PYZBAR:
+            out = pyzbar.decode(v, symbols=symbols) if symbols else pyzbar.decode(v)
+            if out:
+                return out
     return []
 
 def get_camera_indices():
@@ -158,10 +192,35 @@ def get_camera_indices():
     return [0, 1, 2, 3]
 
 def get_camera_backends():
+    # Allow override: CAMERA_BACKEND=DSHOW|MSMF|ANY
+    env = os.getenv("CAMERA_BACKEND", "").strip().upper()
+    if env == "DSHOW" and hasattr(cv2, "CAP_DSHOW"):
+        return [("DSHOW", cv2.CAP_DSHOW)]
+    if env == "MSMF" and hasattr(cv2, "CAP_MSMF"):
+        return [("MSMF", cv2.CAP_MSMF)]
+    if env == "ANY":
+        return [("ANY", None)]
+
+    # Default on Windows: try DSHOW first, then ANY (avoid MSMF instability)
     backends = []
     if hasattr(cv2, "CAP_DSHOW"):
         backends.append(("DSHOW", cv2.CAP_DSHOW))
+    backends.append(("ANY", None))
     return backends
+
+def get_payment_camera_backends():
+    env = os.getenv("PAYMENT_CAMERA_BACKEND", "").strip().upper()
+    if env == "DSHOW" and hasattr(cv2, "CAP_DSHOW"):
+        return [("DSHOW", cv2.CAP_DSHOW)]
+    if env == "MSMF" and hasattr(cv2, "CAP_MSMF"):
+        return [("MSMF", cv2.CAP_MSMF)]
+    if env == "ANY":
+        return [("ANY", None)]
+
+    # Default: prefer DSHOW to avoid MSMF instability
+    if hasattr(cv2, "CAP_DSHOW"):
+        return [("DSHOW", cv2.CAP_DSHOW)]
+    return [("ANY", None)]
 
 def save_session_state():
     state = {
@@ -230,16 +289,44 @@ barcode_map = load_barcode_map()
 # Attendance success event (for auto-advance)
 attendance_event = {"id": None, "name": None, "source": None, "time": 0}
 
+# Normalize student display names for attendance
+NAME_OVERRIDES_BY_ID = {
+    "100": "J.SAMSON D SOUZA",
+}
+NAME_OVERRIDES_BY_ALIAS = {
+    "heee": "J.SAMSON D SOUZA",
+    "samson": "J.SAMSON D SOUZA",
+}
+
+def normalize_identity(student_id, name):
+    sid = str(student_id).strip() if student_id is not None else ""
+    raw = str(name).strip() if name is not None else ""
+    if sid in NAME_OVERRIDES_BY_ID:
+        return NAME_OVERRIDES_BY_ID[sid]
+    key = raw.lower()
+    if key in NAME_OVERRIDES_BY_ALIAS:
+        return NAME_OVERRIDES_BY_ALIAS[key]
+    return raw
+
 def set_attendance_event(student_id, name, source):
     global attendance_event
     if not student_id or str(student_id).lower() == "none":
         return
     attendance_event = {
         "id": str(student_id),
-        "name": str(name),
+        "name": normalize_identity(student_id, name),
         "source": source,
         "time": time.time()
     }
+
+def safe_mark_attendance(student_id, name, source):
+    sid = str(student_id).strip() if student_id is not None else ""
+    if sid not in ALLOWED_IDS:
+        return False
+    norm_name = normalize_identity(sid, name)
+    mark_attendance(sid, norm_name)
+    set_attendance_event(sid, norm_name, source)
+    return True
 
 # Load state on startup
 load_session_state()
@@ -288,18 +375,31 @@ def get_camera():
         backends = get_camera_backends()
         for idx in indices:
             for label, backend in backends:
-                if backend is None:
-                    cap = cv2.VideoCapture(idx)
-                else:
-                    cap = cv2.VideoCapture(idx, backend)
+                try:
+                    if backend is None:
+                        cap = cv2.VideoCapture(idx)
+                    else:
+                        cap = cv2.VideoCapture(idx, backend)
+                except Exception as e:
+                    print(f"Camera open failed (Index {idx}, {label}): {e}")
+                    continue
 
                 if cap.isOpened():
-                    ret, _ = cap.read()
+                    try:
+                        ret, _ = cap.read()
+                    except Exception as e:
+                        print(f"Camera read failed (Index {idx}, {label}): {e}")
+                        ret = False
                     if ret:
                         video_capture = cap
                         try:
                             video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
                             video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                            video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                            try:
+                                video_capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+                            except Exception:
+                                pass
                         except Exception:
                             pass
                         print(f"Camera initialized successfully (Index {idx}, {label}).")
@@ -318,9 +418,104 @@ def release_camera():
         video_capture = None
     cv2.destroyAllWindows()
 
+def get_payment_camera():
+    global payment_video_capture
+    global last_payment_camera_probe
+    global payment_camera_backend, payment_camera_index
+    global camera_in_use
+    if payment_video_capture is None or not payment_video_capture.isOpened():
+        now = time.time()
+        if now - last_payment_camera_probe < 0.2:
+            return None
+        last_payment_camera_probe = now
+
+        # Ensure the main attendance camera is released before payment opens
+        release_camera()
+        camera_in_use = "payment"
+
+        def try_open(indices_list, backends_list):
+            for idx in indices_list:
+                for label, backend in backends_list:
+                    try:
+                        if backend is None:
+                            cap = cv2.VideoCapture(idx)
+                        else:
+                            cap = cv2.VideoCapture(idx, backend)
+                    except Exception as e:
+                        print(f"Payment camera open failed (Index {idx}, {label}): {e}")
+                        continue
+
+                    if cap.isOpened():
+                        ret = False
+                        try:
+                            # Warm-up reads for stability
+                            for _ in range(5):
+                                ok, frame = cap.read()
+                                if ok and frame is not None and getattr(frame, "size", 0) > 0:
+                                    ret = True
+                                    break
+                                time.sleep(0.05)
+                        except Exception as e:
+                            print(f"Payment camera read failed (Index {idx}, {label}): {e}")
+                            ret = False
+                        if ret:
+                            try:
+                                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                                try:
+                                    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+                                except Exception:
+                                    pass
+                            except Exception:
+                                pass
+                            print(f"Payment camera initialized successfully (Index {idx}, {label}).")
+                            return cap, idx, (label, backend)
+                    cap.release()
+            return None, None, None
+
+        # Payment camera: prefer the same index used by attendance if known
+        if "PAYMENT_CAMERA_INDEX" in os.environ and os.environ["PAYMENT_CAMERA_INDEX"].strip().isdigit():
+            indices = [int(os.environ["PAYMENT_CAMERA_INDEX"].strip())]
+        elif payment_camera_index is not None:
+            indices = [payment_camera_index]
+        elif "CAMERA_INDEX" in os.environ and os.environ["CAMERA_INDEX"].strip().isdigit():
+            indices = [int(os.environ["CAMERA_INDEX"].strip())]
+        else:
+            indices = get_camera_indices()
+
+        backends = [payment_camera_backend] if payment_camera_backend is not None else get_payment_camera_backends()
+        cap, idx, be = try_open(indices, backends)
+
+        if cap is None and (payment_camera_index is not None or payment_camera_backend is not None):
+            payment_camera_index = None
+            payment_camera_backend = None
+            cap, idx, be = try_open(get_camera_indices(), get_payment_camera_backends())
+
+        if cap is not None:
+            payment_video_capture = cap
+            payment_camera_index = idx
+            payment_camera_backend = be
+            return payment_video_capture
+
+        print("CRITICAL: No working payment camera found on any index.")
+        payment_video_capture = None
+
+    return payment_video_capture
+
+def release_payment_camera():
+    global payment_video_capture, camera_in_use
+    if payment_video_capture is not None:
+        payment_video_capture.release()
+        payment_video_capture = None
+    if camera_in_use == "payment":
+        camera_in_use = None
+
 def generate_frames():
     global is_registering, is_attendance_active, last_card_check, card_message, card_hold_until, card_confirm, camera_paused, recognition_mode
     global barcode_message, barcode_hold_until, barcode_map, BARCODE_CONFIRM
+    global qr_message, qr_hold_until, QR_CONFIRM
+    global payment_camera_active, camera_in_use
     
     frame_idx = 0
     while True:
@@ -336,13 +531,27 @@ def generate_frames():
             time.sleep(0.5)
             continue
             
+        if payment_camera_active or camera_in_use == "payment":
+            frame = np.zeros((480, 640, 3), dtype=np.uint8)
+            cv2.putText(frame, "Camera In Use (Payment)", (95, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (200, 200, 200), 2)
+            ret, buffer = cv2.imencode('.jpg', frame)
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+            time.sleep(0.2)
+            continue
+
         if not is_attendance_active:
             # KEEP CAMERA OPEN but show "Attendance Stopped"
             # This prevents the DSHOW/MSMF crash when toggling on/off repeatedly
             
             camera = get_camera()
             if camera and camera.isOpened():
-                success, frame = camera.read()
+                try:
+                    with camera_lock:
+                        success, frame = camera.read()
+                except Exception as e:
+                    print(f"Camera read failed: {e}")
+                    success, frame = False, None
                 if success:
                     # Darken the frame to indicate inactivity
                     frame = cv2.addWeighted(frame, 0.3, np.zeros(frame.shape, frame.dtype), 0, 0)
@@ -379,8 +588,9 @@ def generate_frames():
             continue
 
         try:
-            success, frame = camera.read()
-        except cv2.error as e:
+            with camera_lock:
+                success, frame = camera.read()
+        except Exception as e:
             print(f"Camera read error: {e}. Resetting...")
             release_camera()
             time.sleep(0.2)
@@ -495,18 +705,18 @@ def generate_frames():
                         print(f"PT Only: {name_pt} (Dlib Unsure)")
 
                     if name != "Unknown" and student_id and str(student_id) in ALLOWED_IDS:
-                        display_name = f"{name} ({student_id})"
+                        norm_name = normalize_identity(student_id, name)
+                        display_name = f"{norm_name} ({student_id})"
 
                         # Mark attendance
                         if student_id not in marked_students:
-                            mark_attendance(student_id, name)
-                            marked_students.add(student_id)
-                            set_attendance_event(student_id, name, "face")
+                            if safe_mark_attendance(student_id, norm_name, "face"):
+                                marked_students.add(student_id)
 
                             # Trigger HOLD logic
                             display_state[student_id] = {
                                 'until': current_time + HOLD_DURATION,
-                                'name': name
+                                'name': norm_name
                             }
                         else:
                             pass
@@ -532,20 +742,19 @@ def generate_frames():
                         card_confirm["last_time"] = current_time
 
                         if card_confirm["count"] >= CARD_CONFIRM_HITS:
-                            if str(id_card) in ALLOWED_IDS and id_card not in marked_students:
-                                mark_attendance(id_card, name_card)
-                                marked_students.add(id_card)
-                                set_attendance_event(id_card, name_card, "card")
+                            if id_card not in marked_students:
+                                if safe_mark_attendance(id_card, name_card, "card"):
+                                    marked_students.add(id_card)
 
                             card_message = {
                                 "until": current_time + HOLD_DURATION,
-                                "text": f"CARD VERIFIED: {name_card} ({id_card})",
+                                "text": f"CARD VERIFIED: {normalize_identity(id_card, name_card)} ({id_card})",
                                 "ok": True
                             }
                             card_hold_until = current_time + HOLD_DURATION
 
             # --- Barcode Recognition (attendance) ---
-            if recognition_mode in ("face", "card", "both") and HAS_PYZBAR and barcode_map:
+            if not DISABLE_BARCODE and recognition_mode in ("face", "card", "both") and (HAS_PYZBAR or HAS_OPENCV_BARCODE) and barcode_map:
                 barcodes = decode_barcodes(frame)
                 for b in barcodes:
                     try:
@@ -570,17 +779,43 @@ def generate_frames():
                         if BARCODE_CONFIRM["count"] >= BARCODE_CONFIRM_HITS:
                             name_bar = barcode_map[val]["name"]
                             id_bar = barcode_map[val]["id"]
-                            if str(id_bar) in ALLOWED_IDS and id_bar not in marked_students:
-                                mark_attendance(id_bar, name_bar)
-                                marked_students.add(id_bar)
-                                set_attendance_event(id_bar, name_bar, "barcode")
+                            if id_bar not in marked_students:
+                                if safe_mark_attendance(id_bar, name_bar, "barcode"):
+                                    marked_students.add(id_bar)
                             barcode_message = {
                                 "until": current_time + HOLD_DURATION,
-                                "text": f"BARCODE VERIFIED: {name_bar} ({id_bar})",
+                                "text": f"BARCODE VERIFIED: {normalize_identity(id_bar, name_bar)} ({id_bar})",
                                 "ok": True
                             }
                             barcode_hold_until = current_time + HOLD_DURATION
                             break
+
+            # --- Attendance QR Recognition (use same map as barcode) ---
+            if recognition_mode in ("face", "card", "both") and barcode_map:
+                try:
+                    qr_data, _, _ = attendance_qr_detector.detectAndDecode(frame)
+                except Exception:
+                    qr_data = ""
+                if qr_data:
+                    val = qr_data.strip().upper()
+                    if val in barcode_map:
+                        if QR_CONFIRM["val"] == val and (current_time - QR_CONFIRM["last_time"]) <= BARCODE_CONFIRM_WINDOW:
+                            QR_CONFIRM["count"] += 1
+                        else:
+                            QR_CONFIRM = {"val": val, "count": 1, "last_time": current_time}
+                        QR_CONFIRM["last_time"] = current_time
+                        if QR_CONFIRM["count"] >= BARCODE_CONFIRM_HITS:
+                            name_qr = barcode_map[val]["name"]
+                            id_qr = barcode_map[val]["id"]
+                            if id_qr not in marked_students:
+                                if safe_mark_attendance(id_qr, name_qr, "qr"):
+                                    marked_students.add(id_qr)
+                            qr_message = {
+                                "until": current_time + HOLD_DURATION,
+                                "text": f"QR VERIFIED: {normalize_identity(id_qr, name_qr)} ({id_qr})",
+                                "ok": True
+                            }
+                            qr_hold_until = current_time + HOLD_DURATION
                 
             # Draw results
             if scale_factor:
@@ -616,6 +851,14 @@ def generate_frames():
         if current_time < barcode_hold_until:
             h, w = frame.shape[:2]
             cv2.rectangle(frame, (10, 10), (w - 10, h - 10), (0, 255, 0), 2)
+
+        if qr_message and current_time < qr_message.get("until", 0):
+            color = (0, 255, 0) if qr_message.get("ok") else (0, 200, 255)
+            cv2.putText(frame, qr_message["text"], (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+
+        if current_time < qr_hold_until:
+            h, w = frame.shape[:2]
+            cv2.rectangle(frame, (15, 15), (w - 15, h - 15), (0, 200, 255), 2)
             
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
@@ -751,7 +994,7 @@ def generate_payment_frames():
             time.sleep(0.1)
             continue
 
-        camera = get_camera()
+        camera = get_payment_camera()
         if camera is None or not camera.isOpened():
             frame = np.zeros((480, 640, 3), dtype=np.uint8)
             cv2.putText(frame, "Camera Not Found", (140, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (200, 200, 200), 2)
@@ -761,13 +1004,24 @@ def generate_payment_frames():
             time.sleep(0.5)
             continue
 
-        success, frame = camera.read()
-        if not success:
-            release_camera()
-            time.sleep(0.1)
+        try:
+            with payment_camera_lock:
+                success, frame = camera.read()
+        except Exception as e:
+            print(f"Payment camera read failed: {e}")
+            release_payment_camera()
+            time.sleep(0.2)
+            continue
+        if not success or frame is None or getattr(frame, "size", 0) == 0:
+            release_payment_camera()
+            time.sleep(0.2)
             continue
 
-        data, points, _ = payment_qr_detector.detectAndDecode(frame)
+        try:
+            data, points, _ = payment_qr_detector.detectAndDecode(frame)
+        except Exception as e:
+            print(f"Payment QR decode failed: {e}")
+            data = ""
         if data:
             key = data.strip()
             if key in qr_map:
@@ -793,17 +1047,30 @@ def payment():
     session.pop("payment_amount", None)
     session.pop("payment_id", None)
     session.pop("payment_name", None)
+    session.pop("_flashes", None)
     global payment_camera_active, payment_message, payment_last_qr
     keep_camera = session.pop("payment_keep_camera", False)
     if not keep_camera:
         payment_camera_active = False
         payment_message = ""
         payment_last_qr = {"id": None, "name": None, "raw": None, "time": 0}
-        release_camera()
+        release_payment_camera()
     return render_template('payment_scan.html', camera_active=payment_camera_active)
 
 @app.route('/payment_video')
 def payment_video():
+    # Force payment to use the same index/backend as attendance, if detected.
+    global payment_camera_index, payment_camera_backend
+    if "CAMERA_INDEX" in os.environ and os.environ["CAMERA_INDEX"].strip().isdigit():
+        payment_camera_index = int(os.environ["CAMERA_INDEX"].strip())
+    if "CAMERA_BACKEND" in os.environ and os.environ["CAMERA_BACKEND"].strip().upper() in ("DSHOW", "MSMF", "ANY"):
+        env = os.environ["CAMERA_BACKEND"].strip().upper()
+        if env == "DSHOW" and hasattr(cv2, "CAP_DSHOW"):
+            payment_camera_backend = ("DSHOW", cv2.CAP_DSHOW)
+        elif env == "MSMF" and hasattr(cv2, "CAP_MSMF"):
+            payment_camera_backend = ("MSMF", cv2.CAP_MSMF)
+        elif env == "ANY":
+            payment_camera_backend = ("ANY", None)
     return Response(generate_payment_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/payment_start_camera')
@@ -813,8 +1080,9 @@ def payment_start_camera():
     payment_message = ""
     payment_last_qr = {"id": None, "name": None, "raw": None, "time": 0}
     qr_map = load_qr_map()
+    # Force attendance camera to release before opening payment camera
+    release_camera()
     session["payment_keep_camera"] = True
-    flash("Payment camera started.")
     return redirect(url_for('payment'))
 
 @app.route('/payment_stop_camera')
@@ -825,8 +1093,7 @@ def payment_stop_camera():
     global payment_message, payment_last_qr
     payment_message = ""
     payment_last_qr = {"id": None, "name": None, "raw": None, "time": 0}
-    release_camera()
-    flash("Payment camera stopped.")
+    release_payment_camera()
     return redirect(url_for('payment'))
 
 @app.route('/payment_reset')
@@ -838,7 +1105,7 @@ def payment_reset():
     payment_camera_active = False
     payment_message = ""
     payment_last_qr = {"id": None, "name": None, "raw": None, "time": 0}
-    release_camera()
+    release_payment_camera()
     return redirect(url_for('payment'))
 
 @app.route('/qr_status')

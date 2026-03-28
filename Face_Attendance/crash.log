@@ -10,8 +10,41 @@ WARNING: This is a development server. Do not use it in a production deployment.
  * Running on http://127.0.0.1:5000
  * Running on http://10.94.33.26:5000
 Press CTRL+C to quit
-127.0.0.1 - - [28/Mar/2026 01:50:19] "POST /start_attendance HTTP/1.1" 302 -
-127.0.0.1 - - [28/Mar/2026 01:50:19] "GET /attendance?reset=0 HTTP/1.1" 200 -
-127.0.0.1 - - [28/Mar/2026 01:50:23] "GET /video HTTP/1.1" 200 -
-127.0.0.1 - - [28/Mar/2026 01:50:24] "POST /start_attendance HTTP/1.1" 302 -
-127.0.0.1 - - [28/Mar/2026 01:50:24] "GET /attendance?reset=0 HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:07] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:07] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:08] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:09] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:10] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:11] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:11] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:12] "GET /video?t=1774667648875 HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:12] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:14] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:14] "GET /attendance_success HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:20] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:23] "GET /attendance HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:23] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:23] "GET /video HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:24] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:24] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:25] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:26] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:27] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:28] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:28] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:29] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:30] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:31] "GET /stop_camera HTTP/1.1" 302 -
+127.0.0.1 - - [28/Mar/2026 08:44:31] "GET /attendance HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:31] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:31] "GET /video HTTP/1.1" 200 -
+[ WARN:0@59.471] global cap.cpp:344 cv::VideoCapture::open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ERROR:1@59.537] global cap.cpp:323 cv::VideoCapture::open VIDEOIO(DSHOW): raised unknown C++ exception!
+
+
+[ WARN:1@59.537] global cap.cpp:344 cv::VideoCapture::open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+127.0.0.1 - - [28/Mar/2026 08:44:32] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:33] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:34] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:35] "GET /attendance_event HTTP/1.1" 200 -
+127.0.0.1 - - [28/Mar/2026 08:44:36] "GET /attendance_event HTTP/1.1" 200 -
